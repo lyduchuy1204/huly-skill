@@ -70,7 +70,7 @@ type Ref<T> = string & { __ref: T };
 type Doc = any;
 import { getApiKey, getHost, getWorkspaceId } from './utils/auth.js';
 import {
-    tracker, contact, document as hulyDocument, tags,
+    tracker, contact, document as hulyDocument, tags, hr,
     activity, chunter, task,
     IssuePriority, MilestoneStatus, AvatarType,
     makeRank,
@@ -78,6 +78,7 @@ import {
 import { hulyError } from './utils/errors.js';
 import { labelDisplay, planLabelRepair } from './utils/labels.js';
 import { planMove } from './utils/move.js';
+import { buildTeams, type Teams } from './utils/teams.js';
 
 export interface TaskQueryOptions {
     assignee?: string;
@@ -183,6 +184,27 @@ export class HulyClient {
                 role: employee?.role ?? null,
             };
         });
+    }
+
+    /**
+     * HR departments (teams in the Huly UI) with their members, plus every
+     * tracker project's members and owners. Department membership and project
+     * membership are separate in Huly and often disagree, so both are returned
+     * rather than one standing in for the other.
+     */
+    async getTeams(): Promise<Teams> {
+        const [persons, projects] = await Promise.all([this.getPersons(), this.getProjects()]);
+        let departments: any[] = [];
+        let staff: any[] = [];
+        try {
+            [departments, staff] = await Promise.all([
+                this.client!.findAll(hr.class.Department as any, {}, { limit: 1000 }),
+                this.client!.findAll(hr.mixin.Staff as any, {}, { limit: 10000 }),
+            ]);
+        } catch {
+            // A workspace without the HR module has no departments; projects still answer.
+        }
+        return buildTeams({ departments, staff, persons, projects, staffMixin: hr.mixin.Staff, employeeMixin: contact.mixin.Employee });
     }
 
     async getSocialIdentities(): Promise<any[]> {
