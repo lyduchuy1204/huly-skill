@@ -1,6 +1,8 @@
 import fs from 'fs';
 import path from 'path';
 import { HulyClient } from './client.js';
+import { hulyError } from './utils/errors.js';
+import { matchPersons } from './utils/names.js';
 
 export interface ResolvedPerson {
     _id: string;
@@ -54,14 +56,17 @@ export async function resolvePerson(client: HulyClient, input: string): Promise<
     }
 
     const persons = await client.getPersons();
-    const match = persons.find((p: any) =>
-        p._id === input ||
-        p.name?.toLowerCase() === input.toLowerCase() ||
-        p.email?.toLowerCase() === input.toLowerCase()
-    );
-    if (!match) {
-        throw new Error(`User not found: ${input}`);
+    // Huly stores "Family,Given"; people type "Given Family". Match exact id,
+    // name or email first, then the same words in any order.
+    const matches = matchPersons(persons, input);
+    if (matches.length === 0) {
+        throw hulyError('not_found', `User not found: ${input}`);
     }
+    if (matches.length > 1) {
+        const list = matches.map((p: any) => `${p.name} (${p._id})`).join(', ');
+        throw hulyError('invalid_input', `"${input}" matches several people: ${list}. Pass the _id instead.`);
+    }
+    const match = matches[0];
     return { _id: match._id, name: match.name || input };
 }
 

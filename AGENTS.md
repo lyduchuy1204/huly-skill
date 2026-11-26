@@ -135,8 +135,10 @@ huly create task "Wire up the aggregation job" --project OMEGA --parent OMEGA-58
   `huly tasks --parent <parent>` (direct children only).
 
 #### Choosing an assignee
-`--assignee` accepts a name, an internal `_id`, or `me`. When the name is
-ambiguous or unknown, list people first rather than guessing:
+`--assignee` accepts a name, an internal `_id`, or `me`. A name matches in any
+word order (`Huy Lý Đức` finds `Lý Đức,Huy`); several matches fail with
+`invalid_input` listing the `_id`s. When the name is ambiguous or unknown, list
+people first rather than guessing:
 
 ```bash
 huly users --active-only --json

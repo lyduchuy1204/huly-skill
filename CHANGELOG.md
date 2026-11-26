@@ -78,6 +78,18 @@ which are released together under the same number.
   carries `memberCount`, so `fields` without `members` returns sizes only.
 - The assembly is a pure function in `src/utils/teams.ts`, covered by
   `tests/teams.test.ts`.
+### Fixed — names typed in display order now find the person
+- Huly stores names as `Family,Given` (`Lý Đức,Huy`), but people type them in
+  display order (`Huy Lý Đức`) or without the comma. `--assignee`, `me` through
+  `HULY_ACTOR`, and every other person lookup required the stored form exactly,
+  so a correctly spelled `HULY_ACTOR` failed with `User not found` and `me`
+  stopped working for the whole team sharing that token.
+- Lookups still prefer an exact `_id`, name or email. Failing that, they match
+  the same words in any order, case-insensitively. When several people match,
+  the call fails with `invalid_input` listing each name and `_id` instead of
+  picking one. `User not found` now carries the `not_found` code.
+- The matching is a pure function in `src/utils/names.ts`, covered by
+  `tests/names.test.ts`.
 
 ## 1.10.4
 
